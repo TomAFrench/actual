@@ -192,14 +192,12 @@ module.exports = function(webpackEnv) {
               // Turned on because emoji and regex is not minified properly using default
               // https://github.com/facebook/create-react-app/issues/2488
               ascii_only: true
-            }
+            },
+            sourceMap: shouldUseSourceMap
           },
           // Use multi-process parallel running to improve the build speed
           // Default number of concurrent runs: os.cpus().length - 1
           parallel: true,
-          // Enable file caching
-          cache: true,
-          sourceMap: shouldUseSourceMap
         }),
         // This is only used in production mode
         new OptimizeCSSAssetsPlugin({
@@ -274,6 +272,7 @@ module.exports = function(webpackEnv) {
         dgram: false,
         fs: false,
         net: false,
+        path: require.resolve("path-browserify"),
         tls: false,
         child_process: false
       },
@@ -289,7 +288,10 @@ module.exports = function(webpackEnv) {
       strictExportPresence: true,
       rules: [
         // Disable require.ensure as it's not a standard language feature.
-        { parser: { requireEnsure: false } },
+        { 
+          test: /\.(js|mjs|jsx)$/,
+          parser: { requireEnsure: false }
+        },
 
         // First, run the linter.
         // It's important to do this before Babel processes the JS.
