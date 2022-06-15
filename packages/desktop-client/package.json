@@ -37,7 +37,7 @@
     "eslint-plugin-react": "7.11.1",
     "file-loader": "^6.2.0",
     "focus-visible": "^4.1.1",
-    "fork-ts-checker-webpack-plugin-alt": "0.4.14",
+    "fork-ts-checker-webpack-plugin": "^7.2.11",
     "fs-extra": "7.0.0",
     "glamor": "^2.20.40",
     "html-webpack-plugin": "4.0.0-alpha.2",
