@@ -1,0 +1,41 @@
+name: Release
+
+# GITHUB_TOKEN needs permissions to create/edit releases
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  publish:
+    name: Publish for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: mything
+            asset_name: mything-linux-amd64
+          # Electron releases for non-linux platforms are paused until we can perform code signing again.
+          # - os: windows-latest
+          #   artifact_name: mything.exe
+          #   asset_name: mything-windows-amd64
+          # - os: macos-latest
+          #   artifact_name: mything
+          #   asset_name: mything-macos-amd64
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up environment
+        uses: ./.github/actions/setup
+      - name: Build Electron
+        run: ./bin/package
+      - name: Upload application to release
+        uses: 'marvinpinto/action-automatic-releases@latest'
+        with:
+          repo_token: '${{ secrets.GITHUB_TOKEN }}'
+          prerelease: false
+          files: ./packages/desktop-electron/dist/Actual-*
