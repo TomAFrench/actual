@@ -1,7 +1,3 @@
-// This file will initialize the app if we are in a real browser
-// environment (not electron)
-import './browser-preload';
-
 // A hack for now: this makes sure it's appended before glamor
 import '@reach/listbox/styles.css';
 
@@ -28,24 +24,10 @@ import { initialState as initialAppState } from 'loot-core/src/client/reducers/a
 // focus outline appear from keyboard events.
 require('focus-visible');
 
-function lightweightStringify(obj) {
-  return JSON.stringify(obj, function(k, v) {
-    return k ? '' + v : v;
-  });
-}
-
 function log() {
   return next => action => {
     if (window.Actual.IS_DEV) {
       console.log(action);
-    }
-
-    if (window.SentryClient) {
-      window.SentryClient.addBreadcrumb({
-        message: lightweightStringify(action).slice(0, 500),
-        category: 'redux',
-        level: 'info'
-      });
     }
 
     return next(action);

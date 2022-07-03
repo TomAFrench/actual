@@ -37,8 +37,7 @@
       "mobile/jsc-android",
       "mobile/jsc-android/**",
       "**/react-native-web",
-      "**/react-native-web/**",
-      "**/@sentry/cli"
+      "**/react-native-web/**"
     ]
   },
   "scripts": {

@@ -50,6 +50,7 @@ fi
 
 cp ../lib-dist/bundle.mobile.js "$NODE_ROOT/bundle.mobile.js"
 
+
 SENTRY="../../mobile/node_modules/.bin/sentry-cli"
 
 if [ -n "$RELEASE" ]; then

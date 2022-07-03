@@ -72,9 +72,6 @@ class App extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    if (process.env.NODE_ENV !== 'development') {
-      window.SentryClient.captureException(error, { extra: errorInfo });
-    }
     this.setState({ fatalError: error });
   }
 
