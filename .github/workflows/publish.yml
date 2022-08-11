@@ -1,0 +1,28 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  # This job currently only runs for Linux as both Windows and Mac disallow running unsigned applications
+  # without digging through security options. We currently don't sign these builds so only distribute the app for Linux.
+  publish-electron:
+    name: Publish Electron app
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up environment
+        uses: ./.github/actions/setup
+      - name: Build Electron app
+        run: ./bin/package
+      - name: Upload app to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          file: packages/desktop-electron/dist/Actual-*-x86_64.AppImage
+          file_glob: true
+          overwrite: true
