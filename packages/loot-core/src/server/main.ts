@@ -37,12 +37,12 @@ import {
 } from './backups';
 import budgetApp from './budget/app';
 import * as budget from './budget/base';
+import { makeClientId } from './client-id';
 import * as cloudStorage from './cloud-storage';
 import {
   getClock,
   setClock,
   makeClock,
-  makeClientId,
   serializeClock,
   deserializeClock,
   Timestamp,

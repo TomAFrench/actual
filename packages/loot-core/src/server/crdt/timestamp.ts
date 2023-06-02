@@ -1,6 +1,5 @@
 import murmurhash from 'murmurhash';
 
-import * as uuid from '../../platform/uuid';
 
 /**
  * Hybrid Unique Logical Clock (HULC) timestamp generator
@@ -47,25 +46,17 @@ export function serializeClock(clock) {
   });
 }
 
-export function deserializeClock(clock) {
-  let data;
-  try {
-    data = JSON.parse(clock);
-  } catch (e) {
-    data = {
-      timestamp: '1970-01-01T00:00:00.000Z-0000-' + makeClientId(),
-      merkle: {},
-    };
-  }
+export function deserializeClock(clock): {
+  timestamp: MutableTimestamp;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  merkle: any;
+} {
+  const data = JSON.parse(clock);
 
   return {
     timestamp: MutableTimestamp.from(Timestamp.parse(data.timestamp)),
     merkle: data.merkle,
   };
-}
-
-export function makeClientId() {
-  return uuid.v4Sync().replace(/-/g, '').slice(-16);
 }
 
 let config = {

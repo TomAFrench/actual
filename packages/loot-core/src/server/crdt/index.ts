@@ -5,7 +5,6 @@ export {
   getClock,
   setClock,
   makeClock,
-  makeClientId,
   serializeClock,
   deserializeClock,
   Timestamp,

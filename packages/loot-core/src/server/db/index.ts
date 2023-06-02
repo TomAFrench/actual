@@ -11,12 +11,12 @@ import {
   convertForUpdate,
   convertFromSelect,
 } from '../aql';
+import { makeClientId } from '../client-id';
 import {
   makeClock,
   setClock,
   serializeClock,
   deserializeClock,
-  makeClientId,
   Timestamp,
 } from '../crdt';
 import {
