@@ -71,6 +71,16 @@ export const categoryModel = {
   },
 };
 
+
+export type CategoryGroup = {
+  id?: string;
+  name: string;
+
+  is_income?: 1 | 0;
+  sort_order?: number
+}
+
+
 export const categoryGroupModel = {
   validate(categoryGroup, { update }: { update?: boolean } = {}) {
     requiredFields(

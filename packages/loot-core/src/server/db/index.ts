@@ -25,6 +25,7 @@ import {
   categoryGroupModel,
   payeeModel,
   Category,
+  CategoryGroup,
 } from '../models';
 import { sendMessages, batchMessages } from '../sync';
 
@@ -301,7 +302,7 @@ export async function getCategoriesGrouped() {
   });
 }
 
-export async function insertCategoryGroup(group) {
+export async function insertCategoryGroup(group: CategoryGroup): Promise<string> {
   const lastGroup = await first(`
     SELECT sort_order FROM category_groups WHERE tombstone = 0 ORDER BY sort_order DESC, id DESC LIMIT 1
   `);
@@ -314,12 +315,12 @@ export async function insertCategoryGroup(group) {
   return insertWithUUID('category_groups', group);
 }
 
-export function updateCategoryGroup(group) {
+export function updateCategoryGroup(group: WithId<CategoryGroup>): Promise<void> {
   group = categoryGroupModel.validate(group, { update: true });
   return update('category_groups', group);
 }
 
-export async function moveCategoryGroup(id, targetId) {
+export async function moveCategoryGroup(id: string, targetId: string): Promise<void> {
   const groups = await all(
     `SELECT id, sort_order FROM category_groups WHERE tombstone = 0 ORDER BY sort_order, id`,
   );
@@ -331,7 +332,7 @@ export async function moveCategoryGroup(id, targetId) {
   await update('category_groups', { id, sort_order });
 }
 
-export async function deleteCategoryGroup(group, transferId?: string) {
+export async function deleteCategoryGroup(group: { id: string }, transferId?: string): Promise<void> {
   const categories = await all('SELECT * FROM categories WHERE cat_group = ?', [
     group.id,
   ]);
