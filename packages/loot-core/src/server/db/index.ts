@@ -24,6 +24,7 @@ import {
   categoryModel,
   categoryGroupModel,
   payeeModel,
+  Category,
 } from '../models';
 import { sendMessages, batchMessages } from '../sync';
 
@@ -174,7 +175,9 @@ export async function select(table, id) {
   return rows[0];
 }
 
-export async function update(table, params) {
+export type WithId<T> = T & { id: string };
+
+export async function update<T>(table: string, params: WithId<T>): Promise<void> {
   let fields = Object.keys(params).filter(k => k !== 'id');
 
   if (params.id == null) {
@@ -194,20 +197,21 @@ export async function update(table, params) {
   );
 }
 
-export async function insertWithUUID(table, row) {
+export async function insertWithUUID<T>(table: string, row: Record<string, unknown>) {
   if (!row.id) {
     row = { ...row, id: uuid.v4Sync() };
   }
+  const rowWithId: WithId<T> = row as WithId<T>
 
-  await insert(table, row);
+  await insert(table, rowWithId);
 
   // We can't rely on the return value of insert because if the
   // primary key is text, sqlite returns the internal row id which we
   // don't care about. We want to return the generated UUID.
-  return row.id;
+  return rowWithId.id;
 }
 
-export async function insert(table, row) {
+export async function insert<T>(table: string, row: WithId<T>): Promise<void> {
   let fields = Object.keys(row).filter(k => k !== 'id');
 
   if (row.id == null) {
@@ -227,7 +231,7 @@ export async function insert(table, row) {
   );
 }
 
-export async function delete_(table, id) {
+export async function delete_(table: string, id: string): Promise<void> {
   await sendMessages([
     {
       dataset: table,
@@ -338,12 +342,12 @@ export async function deleteCategoryGroup(group, transferId?: string) {
 }
 
 export async function insertCategory(
-  category,
+  category: Category,
   { atEnd } = { atEnd: undefined },
-) {
+): Promise<string> {
   let sort_order;
 
-  let id_;
+  let id_: string;
   await batchMessages(async () => {
     if (atEnd) {
       const lastCat = await first(`
@@ -381,12 +385,12 @@ export async function insertCategory(
   return id_;
 }
 
-export function updateCategory(category) {
+export function updateCategory(category: WithId<Category>): Promise<void> {
   category = categoryModel.validate(category, { update: true });
   return update('categories', category);
 }
 
-export async function moveCategory(id, groupId, targetId?: string) {
+export async function moveCategory(id: string, groupId: string, targetId?: string): Promise<void> {
   if (!groupId) {
     throw new Error('moveCategory: groupId is required');
   }
@@ -403,7 +407,7 @@ export async function moveCategory(id, groupId, targetId?: string) {
   await update('categories', { id, sort_order, cat_group: groupId });
 }
 
-export async function deleteCategory(category, transferId?: string) {
+export async function deleteCategory(category: { id: string }, transferId?: string): Promise<void> {
   if (transferId) {
     // We need to update all the deleted categories that currently
     // point to the one we're about to delete so they all are

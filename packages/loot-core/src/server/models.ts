@@ -48,6 +48,15 @@ export const accountModel = {
   },
 };
 
+export type Category = {
+  id?: string;
+  name: string;
+  cat_group: string;
+
+  is_income?: 1 | 0;
+  sort_order?: number
+}
+
 export const categoryModel = {
   validate(category, { update }: { update?: boolean } = {}) {
     requiredFields(
