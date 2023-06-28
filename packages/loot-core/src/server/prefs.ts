@@ -6,7 +6,7 @@ import { sendMessages } from './sync';
 
 let prefs = null;
 
-export async function loadPrefs(id?) {
+export async function loadPrefs(id?: string) {
   if (process.env.NODE_ENV === 'test' && !id) {
     prefs = { dummyTestPrefs: true };
     return prefs;

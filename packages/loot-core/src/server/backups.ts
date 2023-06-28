@@ -22,7 +22,7 @@ async function getBackups(id: string): Promise<BackupWithDate[]> {
   const budgetDir = fs.getBudgetDir(id);
   const backupDir = fs.join(budgetDir, 'backups');
 
-  let paths = [];
+  let paths: string[] = [];
   if (await fs.exists(backupDir)) {
     paths = await fs.listDir(backupDir);
     paths = paths.filter(file => file.match(/\.sqlite$/));
@@ -72,19 +72,20 @@ export async function getAvailableBackups(id: string): Promise<Backup[]> {
 
   return backups.map(backup => ({
     ...backup,
-    date: backup.date ? dateFns.format(backup.date, 'yyyy-MM-dd h:mm') : null,
+    // TODO: remove type cast
+    date: backup.date ? dateFns.format(backup.date as number | Date, 'yyyy-MM-dd h:mm') : null,
   }));
 }
 
-export async function updateBackups(backups) {
-  const byDay = backups.reduce((groups, backup) => {
-    const day = dateFns.format(backup.date, 'yyyy-MM-dd');
+export async function updateBackups(backups: Backup[]): Promise<string[]> {
+  const byDay = backups.reduce((groups: Record<string, Backup[]>, backup: Backup) => {
+    const day = dateFns.format(backup.date as number | Date, 'yyyy-MM-dd');
     groups[day] = groups[day] || [];
     groups[day].push(backup);
     return groups;
   }, {});
 
-  const removed = [];
+  const removed: string[] = [];
   for (let day of Object.keys(byDay)) {
     const dayBackups = byDay[day];
     const isToday = day === monthUtils.currentDay();
@@ -101,7 +102,7 @@ export async function updateBackups(backups) {
   return removed.concat(currentBackups.slice(10).map(backup => backup.id));
 }
 
-export async function makeBackup(id: string) {
+export async function makeBackup(id: string): Promise<void> {
   const budgetDir = fs.getBudgetDir(id);
 
   // When making a backup, we no longer consider the user to be
@@ -134,7 +135,7 @@ export async function makeBackup(id: string) {
   connection.send('backups-updated', await getAvailableBackups(id));
 }
 
-export async function loadBackup(id: string, backupId: string) {
+export async function loadBackup(id: string, backupId: string): Promise<void> {
   const budgetDir = fs.getBudgetDir(id);
 
   if (!(await fs.exists(fs.join(budgetDir, LATEST_BACKUP_FILENAME)))) {
@@ -207,7 +208,7 @@ export async function loadBackup(id: string, backupId: string) {
   }
 }
 
-export function startBackupService(id: string) {
+export function startBackupService(id: string): void {
   if (serviceInterval) {
     clearInterval(serviceInterval);
   }
@@ -219,7 +220,7 @@ export function startBackupService(id: string) {
   }, 1000 * 60 * 15);
 }
 
-export function stopBackupService() {
+export function stopBackupService(): void {
   clearInterval(serviceInterval);
   serviceInterval = null;
 }

@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import * as fs from '../../platform/server/fs';
 
-export async function uniqueFileName(existingFiles) {
+export async function uniqueFileName(existingFiles: { name: string }[]): Promise<string> {
   let initialName = 'My Finances';
   let idx = 1;
 
@@ -17,7 +17,7 @@ export async function uniqueFileName(existingFiles) {
   return newName;
 }
 
-export async function idFromFileName(name) {
+export async function idFromFileName(name: string): Promise<string> {
   let id = name.replace(/( |[^A-Za-z0-9])/g, '-') + '-' + uuidv4().slice(0, 7);
 
   // Make sure the id is unique. There's a chance one could already

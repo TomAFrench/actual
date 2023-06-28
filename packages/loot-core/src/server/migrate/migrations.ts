@@ -1,6 +1,7 @@
 // We have to bundle in JS migrations manually to avoid having to `eval`
 // them which doesn't play well with CSP. There isn't great, and eventually
 // we can remove this migration.
+import  { Database } from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 
 import m1632571489012 from '../../../migrations/1632571489012_remove_cache';
@@ -13,22 +14,22 @@ let javascriptMigrations = {
   1632571489012: m1632571489012,
 };
 
-export async function withMigrationsDir(dir, func) {
+export async function withMigrationsDir(dir: string, func: () => Promise<void>) {
   let oldDir = MIGRATIONS_DIR;
   MIGRATIONS_DIR = dir;
   await func();
   MIGRATIONS_DIR = oldDir;
 }
 
-export function getMigrationsDir() {
+export function getMigrationsDir(): string {
   return MIGRATIONS_DIR;
 }
 
-function getMigrationId(name) {
+function getMigrationId(name: string): number {
   return parseInt(name.match(/^(\d)+/)[0]);
 }
 
-export function getUpMigration(id, names) {
+export function getUpMigration(id: number, names: string[]) {
   for (let m of names) {
     if (getMigrationId(m) === id) {
       return m;
@@ -36,7 +37,7 @@ export function getUpMigration(id, names) {
   }
 }
 
-export async function getAppliedMigrations(db) {
+export async function getAppliedMigrations(db: Database) {
   const rows = await sqlite.runQuery<{ id: number }>(
     db,
     'SELECT * FROM __migrations__ ORDER BY id ASC',
@@ -46,7 +47,7 @@ export async function getAppliedMigrations(db) {
   return rows.map(row => row.id);
 }
 
-export async function getMigrationList(migrationsDir) {
+export async function getMigrationList(migrationsDir: string): Promise<string[]> {
   const files = await fs.listDir(migrationsDir);
   return files
     .filter(name => name.match(/(\.sql|\.js)$/))
@@ -62,14 +63,14 @@ export async function getMigrationList(migrationsDir) {
     });
 }
 
-export function getPending(appliedIds, all) {
+export function getPending(appliedIds: number[], all: string[]): string[] {
   return all.filter(name => {
     const id = getMigrationId(name);
     return appliedIds.indexOf(id) === -1;
   });
 }
 
-async function applyJavaScript(db, id) {
+async function applyJavaScript(db: Database, id: number): Promise<unknown> {
   const dbInterface = {
     runQuery: (query, params, fetchAll) =>
       sqlite.runQuery(db, query, params, fetchAll),
@@ -85,7 +86,7 @@ async function applyJavaScript(db, id) {
   return run(dbInterface, () => uuidv4());
 }
 
-async function applySql(db, sql) {
+async function applySql(db: Database, sql: string): Promise<void> {
   try {
     await sqlite.execQuery(db, sql);
   } catch (e) {
@@ -94,7 +95,7 @@ async function applySql(db, sql) {
   }
 }
 
-export async function applyMigration(db, name, migrationsDir) {
+export async function applyMigration(db: Database, name: string, migrationsDir: string): Promise<void> {
   const code = await fs.readFile(fs.join(migrationsDir, name));
   if (name.match(/\.js$/)) {
     await applyJavaScript(db, getMigrationId(name));
@@ -106,7 +107,7 @@ export async function applyMigration(db, name, migrationsDir) {
   ]);
 }
 
-function checkDatabaseValidity(appliedIds, available) {
+function checkDatabaseValidity(appliedIds: number[], available: string[]): void {
   for (let i = 0; i < appliedIds.length; i++) {
     if (
       i >= available.length ||
@@ -121,7 +122,7 @@ function checkDatabaseValidity(appliedIds, available) {
   }
 }
 
-export async function migrate(db) {
+export async function migrate(db: Database): Promise<string[]> {
   let appliedIds = await getAppliedMigrations(db);
   let available = await getMigrationList(MIGRATIONS_DIR);
 
