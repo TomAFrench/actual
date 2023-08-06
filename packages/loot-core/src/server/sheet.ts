@@ -3,24 +3,25 @@ import { type Database } from 'better-sqlite3';
 import { captureBreadcrumb } from '../platform/exceptions';
 import * as sqlite from '../platform/server/sqlite';
 import { sheetForMonth } from '../shared/months';
+import { unwrap } from '../shared/test-helpers';
 
 import * as Platform from './platform';
 import * as prefs from './prefs';
 import Spreadsheet from './spreadsheet/spreadsheet';
 import { resolveName } from './spreadsheet/util';
 
-let globalSheet: Spreadsheet;
+let globalSheet: Spreadsheet | null;
 let globalOnChange;
 let globalCacheDb;
 
 export function get(): Spreadsheet {
-  return globalSheet;
+  return unwrap(globalSheet);
 }
 
 async function updateSpreadsheetCache(rawDb, names: string[]) {
   await sqlite.transaction(rawDb, () => {
     names.forEach(name => {
-      const node = globalSheet._getNode(name);
+      const node = get()._getNode(name);
 
       // Don't cache query nodes yet
       if (node.sql == null) {
@@ -35,8 +36,8 @@ async function updateSpreadsheetCache(rawDb, names: string[]) {
 }
 
 function setCacheStatus(
-  mainDb: unknown,
-  cacheDb: unknown,
+  mainDb: Database,
+  cacheDb: Database,
   { clean }: { clean: boolean },
 ) {
   if (clean) {
@@ -180,15 +181,16 @@ export function unloadSpreadsheet(): void {
   }
 }
 
-export async function reloadSpreadsheet(db): Promise<Spreadsheet> {
+export async function reloadSpreadsheet(db): Promise<Spreadsheet | null> {
   if (globalSheet) {
     unloadSpreadsheet();
     return loadSpreadsheet(db, globalOnChange);
   }
+  return null;
 }
 
 export async function loadUserBudgets(db): Promise<void> {
-  let sheet = globalSheet;
+  let sheet = get();
 
   // TODO: Clear out the cache here so make sure future loads of the app
   // don't load any extra values that aren't set here
@@ -229,14 +231,14 @@ export async function loadUserBudgets(db): Promise<void> {
 }
 
 export function getCell(sheet: string, name: string) {
-  return globalSheet._getNode(resolveName(sheet, name));
+  return get()._getNode(resolveName(sheet, name));
 }
 
 export function getCellValue(
   sheet: string,
   name: string,
 ): string | number | boolean {
-  return globalSheet.getValue(resolveName(sheet, name));
+  return get().getValue(resolveName(sheet, name));
 }
 
 export function startTransaction(): void {

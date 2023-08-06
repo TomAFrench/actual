@@ -32,7 +32,7 @@ export type Clock = {
 };
 
 // A mutable global clock
-let clock: Clock | null = null;
+let clock: Clock;
 
 export function setClock(clock_: Clock): void {
   clock = clock_;
@@ -64,8 +64,14 @@ export function deserializeClock(clock: string): Clock {
     };
   }
 
+  const ts = Timestamp.parse(data.timestamp);
+
+  if (!ts) {
+    throw new Timestamp.InvalidError(data.timestamp);
+  }
+
   return {
-    timestamp: MutableTimestamp.from(Timestamp.parse(data.timestamp)),
+    timestamp: MutableTimestamp.from(ts),
     merkle: data.merkle,
   };
 }
@@ -319,10 +325,17 @@ export class Timestamp {
       this.name = 'OverflowError';
     }
   };
+
+  static InvalidError = class InvalidError extends Error {
+    constructor(...args: unknown[]) {
+      super(['timestamp is not valid'].concat(args.map(String)).join(' '));
+      this.name = 'InvalidError';
+    }
+  };
 }
 
 class MutableTimestamp extends Timestamp {
-  static from(timestamp) {
+  static from(timestamp: Timestamp) {
     return new MutableTimestamp(
       timestamp.millis(),
       timestamp.counter(),
@@ -330,15 +343,15 @@ class MutableTimestamp extends Timestamp {
     );
   }
 
-  setMillis(n) {
+  setMillis(n: number) {
     this._state.millis = n;
   }
 
-  setCounter(n) {
+  setCounter(n: number) {
     this._state.counter = n;
   }
 
-  setNode(n) {
+  setNode(n: string) {
     this._state.node = n;
   }
 }

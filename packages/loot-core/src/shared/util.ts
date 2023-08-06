@@ -91,17 +91,13 @@ export function partitionByField<T>(data: readonly T[], field: keyof T) {
   return res;
 }
 
-export function groupBy<T, K extends keyof T>(
-  data: readonly T[],
-  field: K,
-  mapper?: (item: T) => T,
-) {
+export function groupBy<T, K extends keyof T>(data: T[], field: K) {
   let res = new Map<T[K], T[]>();
   for (let i = 0; i < data.length; i++) {
     let item = data[i];
     let key = item[field];
     let existing = res.get(key) || [];
-    res.set(key, existing.concat([mapper ? mapper(item) : data[i]]));
+    res.set(key, existing.concat([item]));
   }
   return res;
 }
@@ -204,13 +200,24 @@ export function titleFirst(str: string) {
   return str[0].toUpperCase() + str.slice(1);
 }
 
-export let numberFormats = [
+type NumberFormats =
+  | 'comma-dot'
+  | 'dot-comma'
+  | 'space-comma'
+  | 'space-dot'
+  | 'comma-dot-in';
+
+export const numberFormats: Array<{
+  value: NumberFormats;
+  label: string;
+  labelNoFraction: string;
+}> = [
   { value: 'comma-dot', label: '1,000.33', labelNoFraction: '1,000' },
   { value: 'dot-comma', label: '1.000,33', labelNoFraction: '1.000' },
   { value: 'space-comma', label: '1 000,33', labelNoFraction: '1 000' },
   { value: 'space-dot', label: '1 000.33', labelNoFraction: '1 000' },
   { value: 'comma-dot-in', label: '1,00,000.33', labelNoFraction: '1,00,000' },
-] as const;
+];
 
 let numberFormat: {
   value: string;
@@ -260,7 +267,7 @@ export function setNumberFormat({
       separator = '.';
   }
 
-  numberFormat = {
+  return {
     value: format,
     separator,
     formatter: new Intl.NumberFormat(locale, {
@@ -319,7 +326,9 @@ export function amountToCurrency(n: number | bigint) {
 
 export function currencyToAmount(str: string) {
   let amount = parseFloat(
-    str.replace(numberFormat.regex, '').replace(numberFormat.separator, '.'),
+    str
+      .replace(getNumberFormat().regex, '')
+      .replace(getNumberFormat().separator, '.'),
   );
   return isNaN(amount) ? null : amount;
 }
@@ -371,4 +380,15 @@ export function looselyParseAmount(amount: string): number | null {
   let right = extractNumbers(amount.slice(m.index + 1));
 
   return safeNumber(parseFloat(left + '.' + right));
+}
+
+export function sortByKey<T>(arr: T[], key: keyof T): T[] {
+  return [...arr].sort((item1, item2) => {
+    if (item1[key] < item2[key]) {
+      return -1;
+    } else if (item1[key] > item2[key]) {
+      return 1;
+    }
+    return 0;
+  });
 }

@@ -1,13 +1,17 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import * as merkle from './merkle';
 import { Timestamp } from './timestamp';
 
-function message(timestamp, hash) {
-  timestamp = Timestamp.parse(timestamp);
+function message(timestampStr: string, hash: number) {
+  const timestamp = Timestamp.parse(timestampStr)!;
   timestamp.hash = () => hash;
   return { timestamp };
 }
 
-function insertMessages(trie, messages) {
+function insertMessages(
+  trie: merkle.TrieNode,
+  messages: ReturnType<typeof message>[],
+) {
   messages.forEach(msg => {
     trie = merkle.insert(trie, msg.timestamp);
   });
@@ -17,7 +21,7 @@ function insertMessages(trie, messages) {
 function unwrap<T>(x: T | null | undefined): T {
   expect(x).not.toBeNull();
   expect(x).toBeDefined();
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
   return x!;
 }
 
@@ -25,11 +29,11 @@ describe('merkle trie', () => {
   test('adding an item works', () => {
     let trie = merkle.insert(
       merkle.emptyTrie(),
-      Timestamp.parse('2018-11-12T13:21:40.122Z-0000-0123456789ABCDEF'),
+      Timestamp.parse('2018-11-12T13:21:40.122Z-0000-0123456789ABCDEF')!,
     );
     trie = merkle.insert(
       trie,
-      Timestamp.parse('2018-11-13T13:21:40.122Z-0000-0123456789ABCDEF'),
+      Timestamp.parse('2018-11-13T13:21:40.122Z-0000-0123456789ABCDEF')!,
     );
     expect(trie).toMatchSnapshot();
   });
@@ -58,7 +62,7 @@ describe('merkle trie', () => {
     trie2 = merkle.insert(trie2, messages[4].timestamp);
     expect(trie2.hash).toBe(108);
 
-    expect(new Date(unwrap(merkle.diff(trie1, trie2))).toISOString()).toBe(
+    expect(new Date(unwrap(merkle.diff(trie1, trie2))!).toISOString()).toBe(
       '2018-11-02T17:15:00.000Z',
     );
 
@@ -75,7 +79,7 @@ describe('merkle trie', () => {
     let trie1 = merkle.emptyTrie();
     let trie2 = merkle.insert(
       merkle.emptyTrie(),
-      Timestamp.parse('2009-01-02T10:17:37.789Z-0000-0000testinguuid1'),
+      Timestamp.parse('2009-01-02T10:17:37.789Z-0000-0000testinguuid1')!,
     );
 
     expect(merkle.diff(trie1, trie2)).toBe(0);
@@ -129,10 +133,10 @@ describe('merkle trie', () => {
 
     // Case 0: It always returns a base time when comparing with an
     // empty trie
-    expect(new Date(merkle.diff(merkle.emptyTrie(), trie)).toISOString()).toBe(
+    expect(new Date(merkle.diff(merkle.emptyTrie(), trie)!).toISOString()).toBe(
       '1970-01-01T00:00:00.000Z',
     );
-    expect(new Date(merkle.diff(trie, merkle.emptyTrie())).toISOString()).toBe(
+    expect(new Date(merkle.diff(trie, merkle.emptyTrie())!).toISOString()).toBe(
       '1970-01-01T00:00:00.000Z',
     );
 
@@ -143,8 +147,8 @@ describe('merkle trie', () => {
       message('2018-11-01T00:59:00.000Z-0000-0123456789ABCDEF', 900),
     ]);
 
-    // Normal comparision works
-    expect(new Date(unwrap(merkle.diff(trie1, trie))).toISOString()).toBe(
+    // Normal comparison works
+    expect(new Date(unwrap(merkle.diff(trie1, trie))!).toISOString()).toBe(
       '2018-11-01T00:54:00.000Z',
     );
 
@@ -163,20 +167,20 @@ describe('merkle trie', () => {
     // key so it bails at the point
     expect(
       new Date(
-        unwrap(merkle.diff(merkle.prune(trie1), merkle.prune(trie))),
+        unwrap(merkle.diff(merkle.prune(trie1), merkle.prune(trie)))!,
       ).toISOString(),
     ).toBe('2018-11-01T00:45:00.000Z');
 
     // Case 2: Add two messages similar to the above case, but the
     // second message modifies the 2nd key at the same level as the
-    // first message modifiying the 1st key
+    // first message modifying the 1st key
     let trie2 = insertMessages(trie, [
       message('2018-11-01T00:59:00.000Z-0000-0123456789ABCDEF', 900),
       message('2018-11-01T01:15:00.000Z-0000-0123456789ABCDEF', 1422),
     ]);
 
-    // Normal comparision works
-    expect(new Date(unwrap(merkle.diff(trie2, trie))).toISOString()).toBe(
+    // Normal comparison works
+    expect(new Date(unwrap(merkle.diff(trie2, trie))!).toISOString()).toBe(
       '2018-11-01T00:54:00.000Z',
     );
 
@@ -197,7 +201,7 @@ describe('merkle trie', () => {
     // ignores the first message.
     expect(
       new Date(
-        unwrap(merkle.diff(merkle.prune(trie2), merkle.prune(trie))),
+        unwrap(merkle.diff(merkle.prune(trie2), merkle.prune(trie)))!,
       ).toISOString(),
     ).toBe('2018-11-01T01:12:00.000Z');
   });
