@@ -194,7 +194,7 @@ export async function update(table, params) {
   );
 }
 
-export async function insertWithUUID(table, row) {
+export async function insertWithUUID(table, row): Promise<string> {
   if (!row.id) {
     row = { ...row, id: uuidv4() };
   }
@@ -207,7 +207,7 @@ export async function insertWithUUID(table, row) {
   return row.id;
 }
 
-export async function insert(table, row) {
+export async function insert(table: string, row): Promise<void> {
   let fields = Object.keys(row).filter(k => k !== 'id');
 
   if (row.id == null) {
@@ -227,7 +227,7 @@ export async function insert(table, row) {
   );
 }
 
-export async function delete_(table, id) {
+export async function delete_(table: string, id: string): Promise<void> {
   await sendMessages([
     {
       dataset: table,
@@ -251,7 +251,7 @@ export async function selectFirstWithSchema(table, sql, params) {
   return rows.length > 0 ? rows[0] : null;
 }
 
-export function insertWithSchema(table, row) {
+export function insertWithSchema(table, row): Promise<string> {
   // Even though `insertWithUUID` does this, we need to do it here so
   // the schema validation passes
   if (!row.id) {
@@ -468,7 +468,9 @@ export function updatePayee(payee) {
 
 export async function mergePayees(target, ids) {
   // Load in payees so we can check some stuff
-  let payees = groupById(await all('SELECT * FROM payees'));
+  let payees: Record<string, { id: string; transfer_acct: string }> = groupById(
+    await all('SELECT * FROM payees'),
+  );
 
   // Filter out any transfer payees
   if (payees[target].transfer_acct != null) {
@@ -623,7 +625,7 @@ export async function getTransactions(accountId) {
   );
 }
 
-export function insertTransaction(transaction) {
+export function insertTransaction(transaction): Promise<string> {
   return insertWithSchema('transactions', transaction);
 }
 

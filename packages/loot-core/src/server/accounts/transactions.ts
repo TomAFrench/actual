@@ -53,7 +53,7 @@ export async function batchUpdateTransactions({
   detectOrphanPayees?: boolean;
 }): Promise<{ added: TransactionEntity[]; updated: unknown[] }> {
   // Track the ids of each type of transaction change (see below for why)
-  let addedIds = [];
+  let addedIds: string[] = [];
   let updatedIds = updated ? updated.map(u => u.id) : [];
   let deletedIds = deleted ? await idsWithChildren(deleted.map(d => d.id)) : [];
 
@@ -126,7 +126,7 @@ export async function batchUpdateTransactions({
   // to the client so that can apply them. Note that added
   // transactions just return the full transaction.
   let resultAdded = allAdded;
-  let resultUpdated: unknown[];
+  let resultUpdated: unknown[] = [];
 
   await batchMessages(async () => {
     await Promise.all(allAdded.map(t => transfer.onInsert(t)));
@@ -149,7 +149,7 @@ export async function batchUpdateTransactions({
         : []),
     ]);
     await rules.updateCategoryRules(
-      allAdded.concat(allUpdated).filter(trans => ids.has(trans.id)),
+      allAdded.concat(allUpdated).filter(trans => ids.has(trans.id!)),
     );
   }
 

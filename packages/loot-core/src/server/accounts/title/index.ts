@@ -28,24 +28,30 @@ function parseMatch(match) {
   return match;
 }
 
-export default function title(str, options = { special: undefined }) {
+export default function title(
+  str: string,
+  options = { special: undefined },
+): string {
   str = str
     .toLowerCase()
-    .replace(regex, (m, lead = '', forced, lower, rest) => {
-      const parsedMatch = parseMatch(m);
-      if (!parsedMatch) {
-        return m;
-      }
-      if (!forced) {
-        const fullLower = lower + rest;
-
-        if (lowerCase.has(fullLower)) {
-          return parsedMatch;
+    .replace(
+      regex,
+      (m, lead = '', forced: string, lower: string, rest: string) => {
+        const parsedMatch = parseMatch(m);
+        if (!parsedMatch) {
+          return m;
         }
-      }
+        if (!forced) {
+          const fullLower = lower + rest;
 
-      return lead + (lower || forced).toUpperCase() + rest;
-    });
+          if (lowerCase.has(fullLower)) {
+            return parsedMatch;
+          }
+        }
+
+        return lead + (lower || forced).toUpperCase() + rest;
+      },
+    );
 
   const customSpecials = options.special || [];
   const replace = [...specials, ...customSpecials];

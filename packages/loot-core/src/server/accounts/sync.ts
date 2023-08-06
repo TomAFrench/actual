@@ -60,7 +60,7 @@ async function updateAccountBalance(id, balance) {
 }
 
 export async function getAccounts(userId, userKey, id) {
-  let res = await post(getServer().PLAID_SERVER + '/accounts', {
+  let res = await post(getServer()!.PLAID_SERVER + '/accounts', {
     userId,
     key: userKey,
     item_id: id,
@@ -80,7 +80,7 @@ export async function getGoCardlessAccounts(userId, userKey, id) {
   if (!userToken) return;
 
   let res = await post(
-    getServer().GOCARDLESS_SERVER + '/accounts',
+    getServer()!.GOCARDLESS_SERVER + '/accounts',
     {
       userId,
       key: userKey,
@@ -127,7 +127,7 @@ async function downloadTransactions(
   while (1) {
     const endDate = monthUtils.currentDay();
 
-    const res = await post(getServer().PLAID_SERVER + '/transactions', {
+    const res = await post(getServer()!.PLAID_SERVER + '/transactions', {
       userId: userId,
       key: userKey,
       item_id: '' + bankId,
@@ -180,14 +180,18 @@ async function downloadGoCardlessTransactions(
   acctId,
   bankId,
   since,
-) {
+): Promise<{
+  transactions: any[];
+  accountBalance: unknown;
+  startingBalance: unknown;
+} | null> {
   let userToken = await asyncStorage.getItem('user-token');
-  if (!userToken) return;
+  if (!userToken) return null;
 
   const endDate = new Date().toISOString().split('T')[0];
 
   const res = await post(
-    getServer().GOCARDLESS_SERVER + '/transactions',
+    getServer()!.GOCARDLESS_SERVER + '/transactions',
     {
       userId: userId,
       key: userKey,
@@ -242,10 +246,13 @@ async function normalizeTransactions(
   transactions,
   acctId,
   { rawPayeeName = false } = {},
-) {
+): Promise<{
+  normalized: any[];
+  payeesToCreate: Map<string, { id: string; name: string }>;
+}> {
   let payeesToCreate = new Map();
 
-  let normalized = [];
+  let normalized: unknown[] = [];
   for (let trans of transactions) {
     // Validate the date because we do some stuff with it. The db
     // layer does better validation, but this will give nicer errors
@@ -289,10 +296,16 @@ async function normalizeTransactions(
   return { normalized, payeesToCreate };
 }
 
-async function normalizeGoCardlessTransactions(transactions, acctId) {
+async function normalizeGoCardlessTransactions(
+  transactions,
+  acctId,
+): Promise<{
+  normalized: any[];
+  payeesToCreate: Map<string, { id: string; name: string }>;
+}> {
   let payeesToCreate = new Map();
 
-  let normalized = [];
+  let normalized: unknown[] = [];
   for (let trans of transactions) {
     if (!trans.date) {
       trans.date = trans.valueDate || trans.bookingDate;
@@ -313,7 +326,7 @@ async function normalizeGoCardlessTransactions(transactions, acctId) {
     // if this is a "Credited" or "Debited" transaction. This means
     // that it matters whether the amount is a positive or negative zero.
     if (trans.amount > 0 || Object.is(Number(trans.amount), 0)) {
-      const nameParts = [];
+      const nameParts: string[] = [];
       nameParts.push(
         title(
           trans.debtorName ||
@@ -332,7 +345,7 @@ async function normalizeGoCardlessTransactions(transactions, acctId) {
       }
       payee_name = nameParts.join(' ');
     } else {
-      const nameParts = [];
+      const nameParts: string[] = [];
       nameParts.push(
         title(
           trans.creditorName ||
@@ -400,8 +413,13 @@ async function createNewPayees(payeesToCreate, addsAndUpdates) {
 
 export async function reconcileGoCardlessTransactions(acctId, transactions) {
   const hasMatched = new Set();
-  const updated = [];
-  const added = [];
+  const updated: Array<{
+    id: string;
+    payee?: unknown;
+    account?: unknown;
+    category?: unknown;
+  }> = [];
+  const added: Array<{ id: string; payee: unknown; category: unknown }> = [];
 
   let { normalized, payeesToCreate } = await normalizeGoCardlessTransactions(
     transactions,
@@ -409,12 +427,12 @@ export async function reconcileGoCardlessTransactions(acctId, transactions) {
   );
 
   // The first pass runs the rules, and preps data for fuzzy matching
-  let transactionsStep1 = [];
+  let transactionsStep1: any[] = [];
   for (let { payee_name, trans, subtransactions } of normalized) {
     // Run the rules
     trans = runRules(trans);
 
-    let match = null;
+    let match: { id: string } | null = null;
     let fuzzyDataset = null;
 
     // First, match with an existing transaction's imported_id. This
@@ -544,9 +562,14 @@ export async function reconcileGoCardlessTransactions(acctId, transactions) {
 }
 
 export async function reconcileTransactions(acctId, transactions) {
-  const hasMatched = new Set();
-  const updated = [];
-  const added = [];
+  const hasMatched = new Set<string>();
+  const updated: Array<{
+    id: string;
+    payee?: unknown;
+    account?: unknown;
+    category?: unknown;
+  }> = [];
+  const added: Array<{ id: string; payee: unknown; category: unknown }> = [];
 
   let { normalized, payeesToCreate } = await normalizeTransactions(
     transactions,
@@ -554,12 +577,12 @@ export async function reconcileTransactions(acctId, transactions) {
   );
 
   // The first pass runs the rules, and preps data for fuzzy matching
-  let transactionsStep1 = [];
+  let transactionsStep1: any[] = [];
   for (let { payee_name, trans, subtransactions } of normalized) {
     // Run the rules
     trans = runRules(trans);
 
-    let match = null;
+    let match: { id: string } | null = null;
     let fuzzyDataset = null;
 
     // First, match with an existing transaction's imported_id. This
@@ -695,7 +718,7 @@ export async function addTransactions(
   transactions,
   { runTransfers = true } = {},
 ) {
-  const added = [];
+  const added: Array<{ id: string; payee: unknown; category: unknown }> = [];
 
   let { normalized, payeesToCreate } = await normalizeTransactions(
     transactions,
@@ -776,13 +799,14 @@ export async function syncGoCardlessAccount(
       date = startingDate;
     }
 
-    let { transactions, accountBalance } = await downloadGoCardlessTransactions(
-      userId,
-      userKey,
-      acctId,
-      bankId,
-      date,
-    );
+    let { transactions, accountBalance } =
+      (await downloadGoCardlessTransactions(
+        userId,
+        userKey,
+        acctId,
+        bankId,
+        date,
+      ))!;
 
     if (transactions.length === 0) {
       return { added: [], updated: [] };
@@ -800,13 +824,13 @@ export async function syncGoCardlessAccount(
     const startingDay = monthUtils.subDays(monthUtils.currentDay(), 30);
 
     const { transactions, startingBalance } =
-      await downloadGoCardlessTransactions(
+      (await downloadGoCardlessTransactions(
         userId,
         userKey,
         acctId,
         bankId,
         dateFns.format(dateFns.parseISO(startingDay), 'yyyy-MM-dd'),
-      );
+      ))!;
 
     // We need to add a transaction that represents the starting
     // balance for everything to balance out. In order to get balance

@@ -104,7 +104,7 @@ export function getRecurringDescription(config) {
 
         desc += ' on the ';
 
-        let strs = [];
+        let strs: string[] = [];
 
         let uniqueDays = new Set(patterns.map(p => p.type));
         let isSameDay = uniqueDays.size === 1 && !uniqueDays.has('day');
